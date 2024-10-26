@@ -1,5 +1,24 @@
+from dataclasses import dataclass
 import requests as r
 from bs4 import BeautifulSoup
+
+@dataclass
+class Stock:
+    ticker: str
+    exchange: str
+    price: float = 0
+    currency: str = "EUR"
+    eur_price: float = 0
+
+    def __post_init__(self):
+        price_info = get_price_info(self.ticker, self.exchange)
+       
+        if price_info["ticker"] == self.ticker: 
+            self.price = price_info["price"]
+            self.currency = price_info["currency"]
+            self.eur_price = price_info["eur_price"]
+
+
 
 
 def getEuroRate(currency):
@@ -35,8 +54,4 @@ def get_price_info(ticker,exchange):
 
 
 if __name__ == "__main__":
-   print(get_price_info("SHOP", "TSE"))
-   print(get_price_info("SHOP", "NYSE"))
-
-  
-   print(getEuroRate("USD"))
+    print(Stock("SHOP","TSE"))
