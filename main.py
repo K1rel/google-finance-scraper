@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import requests as r
 from bs4 import BeautifulSoup
+from tabulate import tabulate
 
 @dataclass
 class Stock:
@@ -19,7 +20,21 @@ class Stock:
             self.eur_price = price_info["eur_price"]
 
 
+@dataclass
+class Position:
+    stock: Stock
+    quantity: int
 
+@dataclass
+class Portfolio:
+    positions: list[Position]
+    
+    def get_total_value(self):
+        total_value = 0
+        for position in self.positions:
+            total_value += position.quantity * position.stock.eur_price
+
+        return round(total_value, 2)
 
 def getEuroRate(currency):
     url = f"https://www.google.com/finance/quote/{currency}-EUR"
@@ -49,9 +64,39 @@ def get_price_info(ticker,exchange):
         "exchange": exchange,
         "price": price,
         "currency": currency,
-        "eurPrice": eurPrice
+        "eur_price": eurPrice
     }
 
 
+def display_portfolio_summary(portfolio):
+    if not isinstance(portfolio,Portfolio):
+        raise TypeError("Please provide a instance of the Portfolio type")
+
+    portfolio_value = portfolio.get_total_value()
+    
+    position_data = []
+
+    for position in sorted(portfolio.positions, key = lambda x : x.quantity * x.stock.eur_price, reverse=True): 
+        position_data.append([position.stock.ticker, 
+        position.stock.exchange, 
+        position.quantity, 
+        position.stock.eur_price,
+         position.quantity * position.stock.eur_price,
+          position.quantity * position.stock.eur_price / portfolio_value * 100])
+
+    print(tabulate(position_data, 
+                    headers=["Ticker", "Exchange", "Quantity", "Price", "Market Value" , "% Allocation"],
+                    tablefmt="psql",
+                    floatfmt=".2f"))
+    print(f"Total portfolio value: {portfolio_value: ,.2f}.")
+
+
 if __name__ == "__main__":
-    print(Stock("SHOP","TSE"))
+    shopify = Stock("SHOP","TSE")
+    msft = Stock("MSFT","NASDAQ")
+    googl = Stock("GOOGL","NASDAQ")
+
+
+    portfolio = Portfolio([Position(shopify,100), Position(msft,10), Position(googl,30)])
+
+    display_portfolio_summary(portfolio)
